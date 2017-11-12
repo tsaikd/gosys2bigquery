@@ -1,0 +1,12 @@
+interval: 5
+bigquery:
+  projectid: example-project-2017
+memory:
+  enable: true
+filesystem:
+  paths:
+    - "/"
+docker:
+  endpoint: "unix:///var/run/docker.sock"
+  stats:
+    enable: true

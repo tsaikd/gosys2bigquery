@@ -16,6 +16,7 @@ var (
 type Config struct {
 	Interval uint64
 	BigQuery struct {
+		Mock      bool
 		KeyFile   string
 		ProjectID string
 		DatasetID string

@@ -1,5 +1,6 @@
 interval: 5
 bigquery:
+  mock: true
   projectid: example-project-2017
 memory:
   enable: true

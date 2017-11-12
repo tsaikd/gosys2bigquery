@@ -14,6 +14,7 @@ func TestLoadFromYAML(t *testing.T) {
 	conf, err := LoadFromYAML([]byte(strings.TrimSpace(`
 interval: 5
 bigquery:
+  mock: true
   keyfile: gckeyfile.json
   projectid: example-project-2017
   datasetid: sys_log
@@ -31,6 +32,7 @@ docker:
 	require.NoError(err)
 
 	require.EqualValues(5, conf.Interval)
+	require.True(conf.BigQuery.Mock)
 	require.Equal("gckeyfile.json", conf.BigQuery.KeyFile)
 	require.Equal("example-project-2017", conf.BigQuery.ProjectID)
 	require.Equal("sys_log", conf.BigQuery.DatasetID)

@@ -36,15 +36,24 @@ func StartLoop(ctx context.Context, bqclient *bqutil.Client, conf config.Config)
 	}
 	applog.Logger().Info("config", zap.Duration("interval", interval))
 
+	mock := conf.BigQuery.Mock
+	applog.Logger().Info("config", zap.Bool("bigquery.mock", mock))
+	uploader := bqclient.UploadAsync
+	if mock {
+		uploader = mockUploadAsync
+	}
+
 	datasetName := conf.BigQuery.DatasetID
 	if datasetName == "" {
 		datasetName = "sys_log"
 	}
-	if _, err = bqclient.EnsureDataset(datasetName); err != nil {
-		if gerr, ok := err.(*googleapi.Error); ok && gerr.Code == 404 {
-			applog.Logger().Error("Is BigQuery projectID correct?", zap.String("bigquery.projectid", conf.BigQuery.ProjectID))
+	if !mock {
+		if _, err = bqclient.EnsureDataset(datasetName); err != nil {
+			if gerr, ok := err.(*googleapi.Error); ok && gerr.Code == 404 {
+				applog.Logger().Error("Is BigQuery projectID correct?", zap.String("bigquery.projectid", conf.BigQuery.ProjectID))
+			}
+			return
 		}
-		return
 	}
 	applog.Logger().Info("config", zap.String("bigquery.datasetid", datasetName))
 
@@ -76,17 +85,22 @@ func StartLoop(ctx context.Context, bqclient *bqutil.Client, conf config.Config)
 		case <-ctx.Done():
 			return
 		case stats := <-memChan:
-			if err = bqclient.UploadAsync(datasetName, memoryTable, stats); err != nil {
+			if err = uploader(datasetName, memoryTable, stats); err != nil {
 				return
 			}
 		case stats := <-fsChan:
-			if err = bqclient.UploadAsync(datasetName, fsTable, stats); err != nil {
+			if err = uploader(datasetName, fsTable, stats); err != nil {
 				return
 			}
 		case stats := <-dockerStatsChan:
-			if err = bqclient.UploadAsync(datasetName, dockerStatsTable, stats); err != nil {
+			if err = uploader(datasetName, dockerStatsTable, stats); err != nil {
 				return
 			}
 		}
 	}
+}
+
+func mockUploadAsync(datasetName string, tableName string, data interface{}) (err error) {
+	applog.Logger().Sugar().Infof("dataset: %q, table: %q, data: %+v", datasetName, tableName, data)
+	return nil
 }

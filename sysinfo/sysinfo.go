@@ -74,7 +74,7 @@ func StartLoop(ctx context.Context, bqclient *bqutil.Client, conf config.Config)
 	dockerStatsTable := "docker_stats"
 	dockerStatsChan := make(chan sysInfoDockerContainer, 100)
 	if conf.Docker.Stats.Enable {
-		if err = getDockerStats(ctx, interval, dockerStatsChan, conf.Docker.EndPoint); err != nil {
+		if err = getDockerStats(ctx, interval, dockerStatsChan, conf.Docker.EndPoint, conf.Docker.KeepContainerNamePrefixSlash); err != nil {
 			return
 		}
 	}

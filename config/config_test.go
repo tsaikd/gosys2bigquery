@@ -26,6 +26,7 @@ filesystem:
     - "/tmp"
 docker:
   endpoint: "unix:///var/run/docker.sock"
+  keepcontainernameprefixslash: true
   stats:
     enable: true
 	`)))
@@ -39,5 +40,6 @@ docker:
 	require.True(conf.Memory.Enable)
 	require.Len(conf.FileSystem.Paths, 2)
 	require.Equal("unix:///var/run/docker.sock", conf.Docker.EndPoint)
+	require.True(conf.Docker.KeepContainerNamePrefixSlash)
 	require.True(conf.Docker.Stats.Enable)
 }

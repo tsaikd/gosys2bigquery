@@ -41,7 +41,13 @@ func newDockerClient(ctx context.Context, endpoint string) (err error) {
 	return
 }
 
-func getDockerStats(ctx context.Context, interval time.Duration, statsChan chan<- sysInfoDockerContainer, endpoint string) (err error) {
+func getDockerStats(
+	ctx context.Context,
+	interval time.Duration,
+	statsChan chan<- sysInfoDockerContainer,
+	endpoint string,
+	keepNamePrefixSlash bool,
+) (err error) {
 	if dockerClient == nil {
 		if err = newDockerClient(ctx, endpoint); err != nil {
 			return
@@ -49,13 +55,18 @@ func getDockerStats(ctx context.Context, interval time.Duration, statsChan chan<
 	}
 
 	go func() {
-		applog.Trace(startDockerGetContainersStatsLoop(ctx, interval, statsChan))
+		applog.Trace(startDockerGetContainersStatsLoop(ctx, interval, statsChan, keepNamePrefixSlash))
 	}()
 
 	return nil
 }
 
-func startDockerGetContainersStatsLoop(ctxx context.Context, interval time.Duration, msgChan chan<- sysInfoDockerContainer) (err error) {
+func startDockerGetContainersStatsLoop(
+	ctxx context.Context,
+	interval time.Duration,
+	msgChan chan<- sysInfoDockerContainer,
+	keepNamePrefixSlash bool,
+) (err error) {
 	eg, ctx := errgroup.WithContext(ctxx)
 
 	// listen running containers
@@ -71,7 +82,7 @@ func startDockerGetContainersStatsLoop(ctxx context.Context, interval time.Durat
 				eg.Go(func() error {
 					return startDockerGetContainerStatsLoop(ctx, containerID, containerName, interval, msgChan)
 				})
-			}(container.ID, container.Names[0])
+			}(container.ID, filterContainerName(container.Names[0], keepNamePrefixSlash))
 		}
 		return nil
 	})
@@ -102,7 +113,7 @@ func startDockerGetContainersStatsLoop(ctxx context.Context, interval time.Durat
 						eg.Go(func() error {
 							return startDockerGetContainerStatsLoop(ctx, containerID, containerName, interval, msgChan)
 						})
-					}(dockerEvent.ID, container.Name)
+					}(dockerEvent.ID, filterContainerName(container.Name, keepNamePrefixSlash))
 				}
 			}
 		}
@@ -167,4 +178,11 @@ func startDockerGetContainerStatsLoop(
 	}
 
 	return eg.Wait()
+}
+
+func filterContainerName(containerName string, keepNamePrefixSlash bool) string {
+	if !keepNamePrefixSlash {
+		return strings.TrimPrefix(containerName, "/")
+	}
+	return containerName
 }

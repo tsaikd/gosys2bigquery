@@ -28,8 +28,9 @@ type Config struct {
 		Paths []string
 	}
 	Docker struct {
-		EndPoint string
-		Stats    struct {
+		EndPoint                     string
+		KeepContainerNamePrefixSlash bool
+		Stats                        struct {
 			Enable bool
 		}
 	}

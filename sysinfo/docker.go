@@ -156,8 +156,9 @@ func startDockerGetContainerStatsLoop(
 					}
 					msg.CPUStats.CPUUsage.TotalUsage = bqInteger(stats.CPUStats.CPUUsage.TotalUsage)
 					msg.MemoryStats.Usage = bqInteger(stats.MemoryStats.Usage)
-					msg.Network.RxBytes = bqInteger(stats.Network.RxBytes)
-					msg.Network.TxBytes = bqInteger(stats.Network.TxBytes)
+					rxBytes, txBytes := sumContainerNetworks(stats.Networks)
+					msg.Network.RxBytes = bqInteger(rxBytes)
+					msg.Network.TxBytes = bqInteger(txBytes)
 					msgChan <- msg
 				}
 			}
@@ -185,4 +186,12 @@ func filterContainerName(containerName string, keepNamePrefixSlash bool) string 
 		return strings.TrimPrefix(containerName, "/")
 	}
 	return containerName
+}
+
+func sumContainerNetworks(networks map[string]docker.NetworkStats) (rxBytes uint64, txBytes uint64) {
+	for _, stats := range networks {
+		rxBytes += stats.RxBytes
+		txBytes += stats.TxBytes
+	}
+	return
 }
